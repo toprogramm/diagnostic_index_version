@@ -35,7 +35,7 @@ HTML = r"""
       .main { display: flex; flex: 1; overflow: hidden; }
       aside { width: 240px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
       .scroll { flex: 1; overflow-y: auto; padding: 15px; }
-      .label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+      .label { font-size: 12px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
 
       .srv-item { display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; border-radius: 4px; }
       .srv-item:hover { background: #161b26; }
@@ -46,7 +46,7 @@ HTML = r"""
       input:checked + .box::after { content: '✓'; position: absolute; color: #000; font-size: 10px; top: -1px; left: 2px; font-weight: 900; }
 
       .srv-info { display: flex; flex-direction: column; font-size: 12px; }
-      .srv-ip { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+      .srv-ip { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
       .actions { padding: 15px; border-top: 1px solid var(--border); display: grid; gap: 6px; }
       button { padding: 8px; border: none; border-radius: 4px; font-weight: 700; font-size: 10px; cursor: pointer; text-transform: uppercase; }
@@ -55,17 +55,17 @@ HTML = r"""
 
       .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
       .card-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 800; font-size: 12px; }
-      .v-info { color: var(--muted); font-family: var(--mono); font-size: 10px; font-weight: 400; }
+      .v-info { color: var(--muted); font-family: var(--mono); font-size: 12px; font-weight: 400; }
       
       .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
       .dot.ok { background: var(--ok); box-shadow: 0 0 5px var(--ok); }
       .dot.danger { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
       .dot.loading { opacity: 0.5; animation: p 1s infinite; }
 
-      .row { padding: 4px 8px; font-size: 11px; font-family: var(--mono); border-left: 2px solid transparent; background: #161b26; margin-bottom: 3px; font-weight: 800; }
+      .row { padding: 4px 8px; font-size: 12px; font-family: var(--mono); border-left: 2px solid transparent; background: #161b26; margin-bottom: 3px; font-weight: 800; }
       .row.ok { border-left-color: var(--ok); }
       .row.danger { border-left-color: var(--danger); }
-      .sec-t { font-size: 10px; color: var(--muted); text-transform: uppercase; margin: 8px 0 4px; font-weight: 800; }
+      .sec-t { font-size: 12px; color: var(--muted); text-transform: uppercase; margin: 8px 0 4px; font-weight: 800; }
       .v-badge { font-weight: 400; }
       @keyframes p { 50% { opacity: 0.2; } }
     </style>
@@ -111,7 +111,7 @@ async function run(mode) {
           <div class="dot loading" id="d-${id}"></div>
           <span>${s.name} <span class="v-info">[${ip}]</span></span>
         </div>
-        <div id="b-${id}" style="font-size:11px">Loading...</div>
+        <div id="b-${id}" style="font-size:12px">Loading...</div>
       </div>`);
   });
 
