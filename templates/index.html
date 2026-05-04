@@ -119,10 +119,33 @@
         let servers = [];
         let lastResults = {};
 
+        function compareVersions(v1, v2) {
+            if (!v1 || !v2 || v1 === '?' || v2 === '?') return 0;
+            const a = v1.split('.').map(x => parseInt(x, 10) || 0);
+            const b = v2.split('.').map(x => parseInt(x, 10) || 0);
+            const len = Math.max(a.length, b.length);
+            for (let i = 0; i < len; i++) {
+                const numA = a[i] || 0;
+                const numB = b[i] || 0;
+                if (numA > numB) return 1;
+                if (numA < numB) return -1;
+            }
+            return 0;
+        }
+
         async function init() {
             try {
                 const r = await fetch('/api/servers');
-                servers = await r.json();
+                const data = await r.json();
+                servers = data.servers;
+                
+                if (data.warnings && data.warnings.length > 0) {
+                    const grid = document.getElementById('grid');
+                    data.warnings.forEach(w => {
+                        grid.insertAdjacentHTML('beforebegin', `<div class="row err-msg" style="margin: 10px; border-radius: 4px;"><b>CONFIG WARNING:</b> ${w}</div>`);
+                    });
+                }
+
                 document.getElementById('srvList').innerHTML = '<div class="label">Servers</div>' + servers.map(s => `
       <label class="srv-item">
         <input type="checkbox" name="srv" value="${s.id}" checked><div class="box"></div>
@@ -254,11 +277,17 @@
             } else { idxHtml += '<div class="row empty">No index data</div>'; }
             idxHtml += '</div>';
 
-            let verHtml = '<div class="modal-col"><div class="sec-t">Versions (Target: ' + (data.version?.footer_version || '??') + ')</div>';
+            const targetVersion = data.version?.footer_version;
+            let verHtml = '<div class="modal-col"><div class="sec-t">Versions (Target: ' + (targetVersion || '??') + ')</div>';
             if (data.version?.services?.length) {
                 data.version.services.forEach(i => {
-                    const ok = i.version === data.version.footer_version;
-                    verHtml += `<div class="row ${ok ? 'ok' : 'danger'}" title="${i.name}: ${i.version}">${i.name}: ${i.version}</div>`;
+                    const cmp = compareVersions(i.version, targetVersion);
+                    let arrow = '';
+                    if (cmp > 0) arrow = ' <span class="text-ok">↑</span>';
+                    else if (cmp < 0) arrow = ' <span class="text-danger">↓</span>';
+                    
+                    const ok = cmp === 0;
+                    verHtml += `<div class="row ${ok ? 'ok' : 'danger'}" title="${i.name}: ${i.version}">${i.name}: ${i.version}${arrow}</div>`;
                 });
             } else { verHtml += '<div class="row empty">No version data</div>'; }
             verHtml += '</div>';

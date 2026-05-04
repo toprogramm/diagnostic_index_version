@@ -21,9 +21,27 @@ PAGE_PARSER_BODY = os.getenv("PAGE_PARSER_BODY")
 # --- LOAD SERVERS ---
 def load_servers():
     with open("config.json", encoding="utf-8") as f:
-        return json.load(f)["servers"]
+        servers = json.load(f)["servers"]
+    
+    ids = [s.get("id") for s in servers]
+    names = [s.get("name") for s in servers]
+    urls = [s.get("url") for s in servers]
+    
+    warnings = []
+    dup_ids = set([x for x in ids if ids.count(x) > 1])
+    dup_names = set([x for x in names if names.count(x) > 1])
+    dup_urls = set([x for x in urls if urls.count(x) > 1])
 
-SERVERS = load_servers()
+    if dup_ids:
+        warnings.append(f"Duplicate server IDs found: {', '.join(filter(None, dup_ids))}. This may cause incorrect behavior.")
+    if dup_names:
+        warnings.append(f"Duplicate server names found: {', '.join(filter(None, dup_names))}.")
+    if dup_urls:
+        warnings.append(f"Duplicate server URLs found: {', '.join(filter(None, dup_urls))}.")
+        
+    return servers, warnings
+
+SERVERS, CONFIG_WARNINGS = load_servers()
 
 # --- SSL WARNINGS OFF ---
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -88,7 +106,10 @@ def favicon():
 
 @app.route("/api/servers")
 def api_servers():
-    return jsonify(SERVERS)
+    return jsonify({
+        "servers": SERVERS,
+        "warnings": CONFIG_WARNINGS
+    })
 
 
 @app.route("/api/check", methods=["POST"])
