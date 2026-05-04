@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>INDEX/VERSION MONITOR</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+    :root { --bg: #1f1f1f; --surface: #181818; --border: #2b2b2b; --accent: #0078d4; --ok: #89d185; --danger: #f14c4c; --muted: #858585; --font: system-ui, -apple-system, sans-serif; --mono: ui-monospace, monospace; --text-main: #cccccc; --text-bright: #ffffff; }
+    body { background: var(--bg); color: var(--text-main); font-family: var(--font); margin: 0; display: flex; flex-direction: column; height: 100vh; font-size: 15px; }
+    header { padding: 12px 24px; display: flex; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); z-index: 10; }
+    .logo { font-weight: 800; font-size: 20px; color: var(--text-bright); }
+    .logo span { color: var(--accent); }
+    #stat { margin-left: auto; font-size: 13px; color: var(--muted); font-weight: 800; }
+    .main { display: flex; flex: 1; overflow: hidden; }
+    aside { width: 260px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); flex-shrink: 0; }
+    .scroll { flex: 1; overflow-y: auto; padding: 15px; }
+    .label { font-size: 13px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: 0.5px; }
+    .srv-item { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
+    .srv-item:hover { background: #2a2d2e; }
+    .srv-item input { display: none; }
+    .box { width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: 3px; position: relative; flex-shrink: 0; transition: all 0.2s; }
+    input:checked+.box { background: var(--accent); border-color: var(--accent); }
+    input:checked+.box::after { content: '✓'; position: absolute; color: #ffffff; font-size: 12px; top: -2px; left: 2px; font-weight: 900; }
+    .srv-info { display: flex; flex-direction: column; font-size: 14px; }
+    .srv-ip { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .actions { padding: 15  px; border-top: 1px solid var(--border); display: grid; gap: 8px; }
+    button { padding: 12px; border: none; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; transition: opacity 0.2s; color: var(--text-bright); }
+    button:hover { opacity: 0.9; }
+    .btn-index { background: var(--accent); }
+    .btn-version { background: #6040b0; }
+    .btn-all { background: #0e639c; }
+    .btn-invert { background: none; border: 1px solid var(--border); color: var(--text-main); }
+    .content { flex: 1; padding: 40px 20px; overflow-y: auto; display: flex; justify-content: center; background: var(--bg); }
+    .content-inner { width: 100%; max-width: 900px; }
+    .monitor-table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .monitor-table th { text-align: left; padding: 16px; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 12px; background: rgba(0, 0, 0, 0.2); }
+    .monitor-table td { padding: 6px 12px 6px 12px; border-bottom: 1px solid var(--border); cursor: pointer; vertical-align: top; }
+    .col-fixed { width: 160px; } /* Немного увеличил для вместимости строки */
+    .monitor-table tr:last-child td { border-bottom: none; }
+    .monitor-table tr:hover { background: #2a2d2e; }
+    .srv-name { font-weight: 700; color: #4fc1ff; font-size: 16px; }
+    .srv-sub { font-size: 11px; color: var(--muted); }
+    .status-cell { display: flex; align-items: center; gap: 8px; height: 100%; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .dot.ok { background: var(--ok); box-shadow: 0 0 10px rgba(137, 209, 133, 0.2); }
+    .dot.danger { background: var(--danger); box-shadow: 0 0 10px rgba(241, 76, 76, 0.2); }
+    .dot.loading { opacity: 0.5; animation: p 1s infinite; }
+    .status-text { font-size: 12px; font-weight: 700; font-family: var(--mono); white-space: nowrap; }
+    .text-ok { color: var(--ok); }
+    .text-danger { color: var(--danger); }
+    #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); }
+    .modal { background: var(--surface); border: 1px solid var(--border); width: 950px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); }
+    .modal-h { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+    .modal-h b { font-size: 16px; color: var(--accent); }
+    .modal-close { cursor: pointer; color: var(--muted); font-size: 24px; }
+    .modal-body { display: flex; gap: 15px; padding: 15px; overflow-y: auto; background: var(--bg); }
+    .modal-col { flex: 1; min-width: 0; }
+    .row { padding: 4px 10px; font-size: 12px; font-family: var(--mono); border-left: 3px solid transparent; background: #2a2d2e; margin-bottom: 4px; font-weight: 500; border-radius: 0 4px 4px 0; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row.ok { border-left-color: var(--ok); }
+    .row.danger { border-left-color: var(--danger); }
+    .row.err-msg { background: rgba(241, 76, 76, 0.1); color: var(--danger); border-left: 3px solid var(--danger); white-space: normal; }
+    .row.empty { color: var(--muted); }
+    .error-container { flex: 1; text-align: center; padding: 40px 0; }
+    .sec-t { font-size: 11px; color: #ce9178; text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px; }
+    @keyframes p { 50% { opacity: 0.2; } }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3e3e3e; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4e4e4e; }
+</style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">INDEX/VERSION<span> MONITOR</span></div>
+        <div id="stat">Ready</div>
+    </header>
+
+    <div class="main">
+        <aside>
+            <div class="scroll" id="srvList"></div>
+            <div class="actions">
+                <button class="btn-index" onclick="run('index')">Index</button>
+                <button class="btn-version" onclick="run('version')">Versions</button>
+                <button class="btn-all" onclick="run('both')">Check All</button>
+                <button class="btn-invert" onclick="toggle()">Invert</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="content-inner">
+                <table class="monitor-table">
+                    <thead>
+                        <tr>
+                            <th>Server</th>
+                            <th class="col-fixed">Index</th>
+                            <th class="col-fixed">Version</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grid"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-overlay" onclick="closeModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-h">
+                <b id="m-title">Server Details</b>
+                <span class="modal-close" onclick="closeModal()">✕</span>
+            </div>
+            <div class="modal-body" id="m-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let servers = [];
+        let lastResults = {};
+
+        async function init() {
+            try {
+                const r = await fetch('/api/servers');
+                servers = await r.json();
+                document.getElementById('srvList').innerHTML = '<div class="label">Servers</div>' + servers.map(s => `
+      <label class="srv-item">
+        <input type="checkbox" name="srv" value="${s.id}" checked><div class="box"></div>
+        <div class="srv-info"><b>${s.name}</b><span class="srv-ip">${s.url.split('//')[1]}</span></div>
+      </label>`).join('');
+            } catch (e) {
+                document.getElementById('stat').textContent = 'API Error: Failed to load servers';
+            }
+        }
+
+        function toggle() { document.querySelectorAll('input[name="srv"]').forEach(b => b.checked = !b.checked); }
+
+        async function run(mode) {
+            const ids = [...document.querySelectorAll('input[name="srv"]:checked')].map(b => b.value);
+            if (!ids.length) return;
+
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            document.getElementById('stat').textContent = 'Running...';
+
+            ids.forEach(id => {
+                const s = servers.find(x => x.id === id);
+                grid.insertAdjacentHTML('beforeend', `
+      <tr id="row-${id}" onclick="showDetails('${id}')">
+        <td>
+            <div class="srv-name">${s.name}</div>
+            <div class="srv-sub">${s.url.split('//')[1]}</div>
+        </td>
+        <td>
+            <div class="status-cell">
+                <div class="dot loading" id="dot-idx-${id}"></div>
+                <span class="status-text" id="txt-idx-${id}"></span>
+            </div>
+        </td>
+        <td>
+            <div class="status-cell">
+                <div class="dot loading" id="dot-ver-${id}"></div>
+                <span class="status-text" id="txt-ver-${id}"></span>
+            </div>
+        </td>
+      </tr>`);
+            });
+
+            await Promise.all(ids.map(async id => {
+                try {
+                    const response = await fetch('/api/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ server_id: id, mode })
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const res = await response.json();
+                    lastResults[id] = res;
+                    updateStatus(id, res);
+                } catch (err) {
+                    const errorData = { error: err.message || "Connection failed" };
+                    lastResults[id] = errorData;
+                    updateStatus(id, errorData);
+                }
+            }));
+            document.getElementById('stat').textContent = 'Last: ' + new Date().toLocaleTimeString();
+        }
+
+        function updateStatus(id, data) {
+            const dIdx = document.getElementById(`dot-idx-${id}`);
+            const dVer = document.getElementById(`dot-ver-${id}`);
+            const tIdx = document.getElementById(`txt-idx-${id}`);
+            const tVer = document.getElementById(`txt-ver-${id}`);
+
+            if (data.error) {
+                dIdx.className = dVer.className = 'dot danger';
+                tIdx.textContent = 'ERROR';
+                tIdx.className = 'status-text text-danger';
+                tVer.textContent = 'FAIL';
+                tVer.className = 'status-text text-danger';
+                return;
+            }
+
+            if (data.index?.services) {
+                const ok = data.index.services.every(s => s.status === 'alert-success');
+                dIdx.className = 'dot ' + (ok ? 'ok' : 'danger');
+                tIdx.textContent = ok ? 'OK' : 'ISSUE';
+                tIdx.className = 'status-text ' + (ok ? 'text-ok' : 'text-danger');
+            } else {
+                dIdx.className = 'dot';
+                tIdx.textContent = '';
+            }
+
+            if (data.version?.services) {
+                const v = data.version.footer_version || '?.?.?';
+                const ok = data.version.services.every(s => s.version === v);
+                dVer.className = 'dot ' + (ok ? 'ok' : 'danger');
+                tVer.textContent = v;
+                tVer.className = 'status-text ' + (ok ? 'text-ok' : 'text-danger');
+            } else {
+                dVer.className = 'dot';
+                tVer.textContent = '';
+            }
+        }
+
+        function showDetails(id) {
+            const data = lastResults[id];
+            const s = servers.find(x => x.id === id);
+            if (!data) return;
+
+            document.getElementById('m-title').textContent = s.name + ' [' + s.url.split('//')[1] + ']';
+            const content = document.getElementById('m-content');
+
+            if (data.error) {
+                content.innerHTML = `
+            <div class="error-container">
+                <div class="row err-msg">
+                    <b>CONNECTION ERROR:</b> ${data.error}<br>
+                    <small>The server might be down or unreachable from the monitor.</small>
+                </div>
+            </div>`;
+                document.getElementById('modal-overlay').style.display = 'flex';
+                return;
+            }
+
+            let idxHtml = '<div class="modal-col"><div class="sec-t">Index Status</div>';
+            if (data.index?.services?.length) {
+                data.index.services.forEach(i => {
+                    const ok = i.status === 'alert-success';
+                    idxHtml += `<div class="row ${ok ? 'ok' : 'danger'}" title="${i.name}: ${i.detail}">${i.name}: ${i.detail}</div>`;
+                });
+            } else { idxHtml += '<div class="row empty">No index data</div>'; }
+            idxHtml += '</div>';
+
+            let verHtml = '<div class="modal-col"><div class="sec-t">Versions (Target: ' + (data.version?.footer_version || '??') + ')</div>';
+            if (data.version?.services?.length) {
+                data.version.services.forEach(i => {
+                    const ok = i.version === data.version.footer_version;
+                    verHtml += `<div class="row ${ok ? 'ok' : 'danger'}" title="${i.name}: ${i.version}">${i.name}: ${i.version}</div>`;
+                });
+            } else { verHtml += '<div class="row empty">No version data</div>'; }
+            verHtml += '</div>';
+
+            content.innerHTML = idxHtml + verHtml;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        init();
+    </script>
+</body>
+
+</html>

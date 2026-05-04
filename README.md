@@ -6,6 +6,8 @@
 
 ```bash
 pip install -r requirements.txt
+# или если не захочет что либо устанавливаться
+python -m pip install -r requirements.txt 
 python app.py
 ```
 
