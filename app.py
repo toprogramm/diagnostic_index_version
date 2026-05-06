@@ -9,6 +9,12 @@ load_dotenv()
 LOGIN = os.getenv("LOGIN")
 PASSWORD = os.getenv("PASSWORD")
 TIMEOUT = int(os.getenv("TIMEOUT", 300))
+PROD = os.getenv("PROD", "false").lower() == "true"
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 5000))
+SESSION_TIMEOUT = int(os.getenv("SESSION_TIMEOUT", 10))
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 300))
+
 SIGNIN_TAIL = os.getenv("SIGNIN_TAIL")
 VERSION_TAIL = os.getenv("VERSION_TAIL")
 INDEX_TAIL = os.getenv("INDEX_TAIL")
@@ -75,7 +81,7 @@ def get_session(url):
     s = requests.Session()
     s.verify = False
 
-    r = s.get(f"{url}{SIGNIN_TAIL}", timeout=10)
+    r = s.get(f"{url}{SIGNIN_TAIL}", timeout=SESSION_TIMEOUT)
     soup = BeautifulSoup(r.text, "html.parser")
 
     token = soup.find("input", {"name": PAGE_AUTH_TOKEN})["value"]
@@ -87,7 +93,7 @@ def get_session(url):
             PAGE_INPUT_LOGIN : LOGIN,
             PAGE_INPUT_PASSWORD: PASSWORD
         },
-        timeout=10
+        timeout=SESSION_TIMEOUT
     )
 
     return s
@@ -123,14 +129,14 @@ def api_check():
 
         # INDEX
         if data["mode"] in ("index", "both"):
-            html = session.get(f"{srv['url']}{INDEX_TAIL}", timeout=TIMEOUT).text
+            html = session.get(f"{srv['url']}{INDEX_TAIL}", timeout=REQUEST_TIMEOUT).text
             result["index"] = {
                 "services": parse(BeautifulSoup(html, "html.parser"))
             }
 
         # VERSION
         if data["mode"] in ("version", "both"):
-            html = session.get(f"{srv['url']}{VERSION_TAIL}", timeout=TIMEOUT).text
+            html = session.get(f"{srv['url']}{VERSION_TAIL}", timeout=REQUEST_TIMEOUT).text
             soup = BeautifulSoup(html, "html.parser")
 
             footer = soup.find(id="footer")
@@ -160,4 +166,9 @@ def api_check():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    if PROD:
+        from waitress import serve
+        print(f"Starting production server on http://{HOST}:{PORT}")
+        serve(app, host=HOST, port=PORT)
+    else:
+        app.run(debug=True, host=HOST, port=PORT)
